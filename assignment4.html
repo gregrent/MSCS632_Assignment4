@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Employee Scheduler</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    label, select, input, button { margin: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
+    th { background-color: #f4f4f4; }
+  </style>
+</head>
+<body>
+
+<h2>Employee Shift Preference Entry</h2>
+<label>Employee Name: <input type="text" id="name"></label>
+<label>Day:
+  <select id="day">
+    <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+    <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+  </select>
+</label>
+<label>Shift:
+  <select id="shift">
+    <option>Morning</option><option>Afternoon</option><option>Evening</option>
+  </select>
+</label>
+<label>Priority:
+  <select id="priority">
+    <option>1</option><option>2</option><option>3</option>
+  </select>
+</label>
+<button onclick="addPreference()">Add Preference</button>
+<button onclick="generateSchedule()">Generate Schedule</button>
+
+<h3>Schedule Output</h3>
+<div id="output"></div>
+
+<script>
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const SHIFTS = ['Morning','Afternoon','Evening'];
+const MAX_DAYS = 5;
+const MIN_PER_SHIFT = 2;
+
+let preferences = {};  // { employee: { day: { shift: priority } } }
+
+function addPreference() {
+  const name = document.getElementById('name').value.trim();
+  const day = document.getElementById('day').value;
+  const shift = document.getElementById('shift').value;
+  const priority = parseInt(document.getElementById('priority').value);
+
+  if (!name) return alert("Please enter employee name.");
+
+  if (!preferences[name]) preferences[name] = {};
+  if (!preferences[name][day]) preferences[name][day] = {};
+  const dayPrefs = preferences[name][day];
+
+  if (Object.values(dayPrefs).includes(priority)) {
+    alert(`Priority ${priority} already assigned for ${name} on ${day}.`);
+  } else {
+    preferences[name][day][shift] = priority;
+    alert(`Added: ${name} prefers ${shift} on ${day} with priority ${priority}.`);
+  }
+}
+
+function generateSchedule() {
+  let schedule = {};
+  let workdays = {};  // { employee: count }
+
+  for (let day of DAYS) {
+    schedule[day] = {};
+    for (let shift of SHIFTS) schedule[day][shift] = [];
+
+    let assignedToday = new Set();
+
+    for (let priority = 1; priority <= 3; priority++) {
+      for (let shift of SHIFTS) {
+        for (let emp in preferences) {
+          if (assignedToday.has(emp)) continue;
+          workdays[emp] = workdays[emp] || 0;
+          if (workdays[emp] >= MAX_DAYS) continue;
+          if (preferences[emp][day] && preferences[emp][day][shift] === priority) {
+            if (schedule[day][shift].length < MIN_PER_SHIFT) {
+              schedule[day][shift].push(emp);
+              assignedToday.add(emp);
+              workdays[emp]++;
+            }
+          }
+        }
+      }
+    }
+
+    // Fill short shifts randomly
+    for (let shift of SHIFTS) {
+      while (schedule[day][shift].length < MIN_PER_SHIFT) {
+        let candidates = Object.keys(preferences).filter(e =>
+          !assignedToday.has(e) && (workdays[e] || 0) < MAX_DAYS
+        );
+        if (candidates.length === 0) break;
+        let randomEmp = candidates[Math.floor(Math.random() * candidates.length)];
+        schedule[day][shift].push(randomEmp);
+        assignedToday.add(randomEmp);
+        workdays[randomEmp] = (workdays[randomEmp] || 0) + 1;
+      }
+    }
+  }
+
+  renderSchedule(schedule);
+}
+
+function renderSchedule(schedule) {
+  let html = '<table><tr><th>Day</th><th>Morning</th><th>Afternoon</th><th>Evening</th></tr>';
+  for (let day of DAYS) {
+    html += `<tr><td>${day}</td>`;
+    for (let shift of SHIFTS) {
+      html += `<td>${schedule[day][shift].join(", ") || "-"}</td>`;
+    }
+    html += `</tr>`;
+  }
+  html += '</table>';
+  document.getElementById('output').innerHTML = html;
+}
+</script>
+
+</body>
+</html>
