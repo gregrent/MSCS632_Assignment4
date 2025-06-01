@@ -109,7 +109,7 @@ schedule_button = tk.Button(root, text="Generate Schedule", command=generate_sch
 schedule_button.pack(pady=5)
 
 # Output Text
-output_text = tk.Text(root, height=20, width=60)
+output_text = tk.Text(root, height=35, width=60)
 output_text.pack(padx=10, pady=10)
 
 # Run the app
